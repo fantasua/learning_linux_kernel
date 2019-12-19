@@ -996,7 +996,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 		goto fork_out;
 
 	retval = -ENOMEM;
-	p = dup_task_struct(current);
+	p = dup_task_struct(current);	// 为新进程创建内核栈 thread_info结构和task_struct
 	if (!p)
 		goto fork_out;
 
@@ -1009,6 +1009,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	DEBUG_LOCKS_WARN_ON(!p->softirqs_enabled);
 #endif
 	retval = -EAGAIN;
+	// 检查用户拥有的进程数是否超过了限制
 	if (atomic_read(&p->real_cred->user->processes) >=
 			task_rlimit(p, RLIMIT_NPROC)) {
 		if (!capable(CAP_SYS_ADMIN) && !capable(CAP_SYS_RESOURCE) &&
@@ -1032,17 +1033,20 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	if (!try_module_get(task_thread_info(p)->exec_domain->module))
 		goto bad_fork_cleanup_count;
 
+	// 子进程着手将自己与父进程区分开来
+	// 子进程描述符初始化
 	p->did_exec = 0;
 	delayacct_tsk_init(p);	/* Must remain after dup_task_struct() */
-	copy_flags(clone_flags, p);
-	INIT_LIST_HEAD(&p->children);
+	copy_flags(clone_flags, p);	// 更新task_struct中的flag成员
+	INIT_LIST_HEAD(&p->children);	//初始化task_struct链表
 	INIT_LIST_HEAD(&p->sibling);
 	rcu_copy_process(p);
-	p->vfork_done = NULL;
+	p->vfork_done = NULL;	// 对于vfork()函数，此成员指向一个特定的地址
 	spin_lock_init(&p->alloc_lock);
 
 	init_sigpending(&p->pending);
 
+	// 各种task_struct中的统计信息初始化
 	p->utime = cputime_zero;
 	p->stime = cputime_zero;
 	p->gtime = cputime_zero;
@@ -1146,7 +1150,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 
 	if (pid != &init_struct_pid) {
 		retval = -ENOMEM;
-		pid = alloc_pid(p->nsproxy->pid_ns);
+		pid = alloc_pid(p->nsproxy->pid_ns);	// 为新进程分配一个有效的进程pid
 		if (!pid)
 			goto bad_fork_cleanup_io;
 
