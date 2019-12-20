@@ -601,7 +601,7 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
 	deactivate_mm(tsk, mm);
 
 	/* notify parent sleeping on vfork() */
-	if (vfork_done) {
+	if (vfork_done) {	// 通过vfork_done成员 来向父进程发信号
 		tsk->vfork_done = NULL;
 		complete(vfork_done);
 	}
@@ -1417,8 +1417,8 @@ long do_fork(unsigned long clone_flags,
 		if (clone_flags & CLONE_PARENT_SETTID)
 			put_user(nr, parent_tidptr);
 
-		if (clone_flags & CLONE_VFORK) {
-			p->vfork_done = &vfork;
+		if (clone_flags & CLONE_VFORK) {	// 此处时针对vfork()设置的标志
+			p->vfork_done = &vfork;		// 通过task_struct中的vfork_done成员 发送开始执行父进程的信号
 			init_completion(&vfork);
 		}
 
@@ -1441,13 +1441,13 @@ long do_fork(unsigned long clone_flags,
 			set_tsk_thread_flag(p, TIF_SIGPENDING);
 			__set_task_state(p, TASK_STOPPED);
 		} else {
-			wake_up_new_task(p, clone_flags);
+			wake_up_new_task(p, clone_flags);	// 子进程开始执行
 		}
 
 		tracehook_report_clone_complete(trace, regs,
 						clone_flags, nr, p);
 
-		if (clone_flags & CLONE_VFORK) {
+		if (clone_flags & CLONE_VFORK) {	// 对于vfork() 这里父进程等待 直到子进程通过vfork成员发送信号才恢复执行
 			freezer_do_not_count();
 			wait_for_completion(&vfork);
 			freezer_count();
