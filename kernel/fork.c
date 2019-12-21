@@ -1418,7 +1418,7 @@ long do_fork(unsigned long clone_flags,
 			put_user(nr, parent_tidptr);
 
 		if (clone_flags & CLONE_VFORK) {	// 此处时针对vfork()设置的标志
-			p->vfork_done = &vfork;		// 通过task_struct中的vfork_done成员 发送开始执行父进程的信号
+			p->vfork_done = &vfork;		// 通过task_struct中的vfork_done成员 发送开始执行父进程的信号 这里是初始化vfork_done成员
 			init_completion(&vfork);
 		}
 
