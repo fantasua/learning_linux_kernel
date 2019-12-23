@@ -4,6 +4,7 @@
 #include <linux/err.h>
 #include <linux/sched.h>
 
+// create kernel thread here
 struct task_struct *kthread_create(int (*threadfn)(void *data),
 				   void *data,
 				   const char namefmt[], ...)
