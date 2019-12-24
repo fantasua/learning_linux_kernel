@@ -938,6 +938,7 @@ NORET_TYPE void do_exit(long code)
 
 	exit_irq_thread();
 
+	// 在这里将task_struct中的标志成员设置为PF_EXITING
 	exit_signals(tsk);  /* sets PF_EXITING */
 	/*
 	 * tsk->flags are checked in the futex code to protect against
@@ -955,6 +956,7 @@ NORET_TYPE void do_exit(long code)
 	/* sync mm's RSS info before statistics gathering */
 	if (tsk->mm)
 		sync_mm_rss(tsk, tsk->mm);
+	// 在这里清除定时器
 	group_dead = atomic_dec_and_test(&tsk->signal->live);
 	if (group_dead) {
 		hrtimer_cancel(&tsk->signal->real_timer);
