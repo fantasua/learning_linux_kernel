@@ -952,7 +952,7 @@ NORET_TYPE void do_exit(long code)
 				current->comm, task_pid_nr(current),
 				preempt_count());
 
-	acct_update_integrals(tsk);
+	acct_update_integrals(tsk);	// 输出记账信息
 	/* sync mm's RSS info before statistics gathering */
 	if (tsk->mm)
 		sync_mm_rss(tsk, tsk->mm);
@@ -973,15 +973,15 @@ NORET_TYPE void do_exit(long code)
 	tsk->exit_code = code;
 	taskstats_exit(tsk, group_dead);
 
-	exit_mm(tsk);
+	exit_mm(tsk); // 释放内存占用的mm_struct
 
 	if (group_dead)
 		acct_process();
 	trace_sched_process_exit(tsk);
 
 	exit_sem(tsk);
-	exit_files(tsk);
-	exit_fs(tsk);
+	exit_files(tsk);	// 递减文件描述符
+	exit_fs(tsk);	//递减文件系统数据引用计数
 	check_stack_usage();
 	exit_thread();
 	cgroup_exit(tsk, 1);
@@ -1003,7 +1003,8 @@ NORET_TYPE void do_exit(long code)
 	 */
 	perf_event_exit_task(tsk);
 
-	exit_notify(tsk, group_dead);
+	exit_notify(tsk, group_dead);	// 向父进程发信号 给子进程重新找养父进程
+									// 在exit_state成员中 将进程状态设成EXIT_ZOMBIE
 #ifdef CONFIG_NUMA
 	mpol_put(tsk->mempolicy);
 	tsk->mempolicy = NULL;
@@ -1035,7 +1036,9 @@ NORET_TYPE void do_exit(long code)
 	exit_rcu();
 	/* causes final put_task_struct in finish_task_switch(). */
 	tsk->state = TASK_DEAD;
-	schedule();
+	schedule();	// 切换到新进程
+				// EXIT_ZOMBIE状态的进程不会被调度
+				// do_exit()函数永不返回
 	BUG();
 	/* Avoid "noreturn function does return".  */
 	for (;;)
