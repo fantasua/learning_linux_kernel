@@ -181,7 +181,8 @@ repeat:
 
 	write_lock_irq(&tasklist_lock);
 	tracehook_finish_release_task(p);
-	__exit_signal(p);
+	__exit_signal(p);	// 函数调用__unhash_process() -> 调用detach_pid()从pid_hash上删除进程
+						// 函数释放当前僵死进程的剩余资源 并进行统计记录
 
 	/*
 	 * If we are the last non-leader member of the thread
@@ -213,7 +214,10 @@ repeat:
 
 	write_unlock_irq(&tasklist_lock);
 	release_thread(p);
-	call_rcu(&p->rcu, delayed_put_task_struct);
+	//rcu stands for read-copy update
+	// wiki https://en.wikipedia.org/wiki/Read-copy-update
+	call_rcu(&p->rcu, delayed_put_task_struct); // 在这里调用释放僵死进程的资源
+												// 实际释放资源的put_task_struct()操作在delayed_put_task_struct()中
 
 	p = leader;
 	if (unlikely(zap_leader))
